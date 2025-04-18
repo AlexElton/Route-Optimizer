@@ -292,7 +292,8 @@ function App() {
         <h1 className="text-2xl font-bold text-gray-800">Delivery Route Planner</h1>
       </header>
 
-      <div className="flex justify-center">
+      <div className="flex justify-center gap-4 flex-wrap">
+        {/* Take Photo */}
         <label className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-6 py-4 flex items-center gap-2 cursor-pointer touch-manipulation">
           <Camera size={24} />
           <span className="text-lg">Take Photo</span>
@@ -304,7 +305,21 @@ function App() {
             className="hidden"
           />
         </label>
+
+        {/* Choose File */}
+        <label className="bg-gray-500 hover:bg-gray-600 text-white rounded-lg px-6 py-4 flex items-center gap-2 cursor-pointer touch-manipulation">
+          <FileText size={24} />
+          <span className="text-lg">Choose File</span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageCapture}
+            className="hidden"
+          />
+        </label>
       </div>
+
+
 
       {imagePreview && (
         <div className="mt-4">
