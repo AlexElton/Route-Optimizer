@@ -6,6 +6,10 @@ WORKDIR /app
 COPY requirements.txt .
 # Install the dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
+RUN apt-get update && \
+    apt-get install -y tesseract-ocr tesseract-ocr-nor libtesseract-dev
+    
 # Copy the rest of the application code into the container
 COPY . .
 # Expose the port the app runs on
