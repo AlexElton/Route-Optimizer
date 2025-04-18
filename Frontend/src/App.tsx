@@ -164,7 +164,29 @@ function App() {
     }
   };
   
+  const openInGoogleMaps = () => {
+    const activeStops = stops.filter(stop => !stop.completed);
+    if (activeStops.length < 1) {
+      alert("No active stops to export.");
+      return;
+    }
   
+    const origin = manualOrigin || (currentLocation ? `${currentLocation.lat},${currentLocation.lng}` : null);
+    if (!origin) {
+      alert("No origin defined.");
+      return;
+    }
+  
+    const destination = activeStops[activeStops.length - 1].address;
+    const waypoints = activeStops
+      .slice(0, -1)
+      .map(stop => encodeURIComponent(stop.address))
+      .join('|');
+  
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${waypoints}`;
+  
+    window.open(mapsUrl, '_blank');
+  };
 
   const clearMarkers = () => {
     markersRef.current.forEach(marker => marker.setMap(null));
@@ -444,7 +466,15 @@ function App() {
             ref={mapRef}
             className="w-full h-[400px] rounded-lg shadow-lg"
           />
+          <button
+            onClick={openInGoogleMaps}
+            className="bg-gray-800 hover:bg-gray-900 text-white rounded-lg px-4 py-2 flex items-center gap-2"
+          >
+            <MapIcon size={20} />
+            <span>Open in Google Maps</span>
+          </button>
         </div>
+        
       )}
     </div>
   );
