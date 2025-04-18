@@ -62,7 +62,8 @@ async def ocr_extract(request: OCRRequest):
         print("Splitting image")
         image_data = io.BytesIO(base64.b64decode(encoded))
         print("Decoding image")
-        image = Image.open(image_data)
+        image_data = io.BytesIO(base64.b64decode(encoded))
+        image = Image.open(image_data).convert("RGB")
         print("Opening image")
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid image data: {str(e)}")
