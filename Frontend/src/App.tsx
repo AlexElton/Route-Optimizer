@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, FileText, Map as MapIcon, Navigation, CheckCircle2, Trash2, RotateCcw, User, Clock, LifeBuoy, Sliders } from 'lucide-react';
+import { Camera, FileText, Map as MapIcon, Navigation, CheckCircle2, Trash2, RotateCcw, User, Sun, Moon, LifeBuoy, Sliders } from 'lucide-react';
 import { Loader } from '@googlemaps/js-api-loader';
 import heic2any from "heic2any";
 
@@ -28,9 +28,10 @@ function App() {
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [manualOrigin, setManualOrigin] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'delivery' | 'history' | 'support' | 'profile'>('delivery');
+  const [activeTab, setActiveTab] = useState<'delivery' | 'support' | 'profile'>('delivery');
   const [routeSummary, setRouteSummary] = useState<{totalKm: number, totalTime: string} | null>(null);
   const [currentDate, setCurrentDate] = useState<string>('');
+  const [darkMode, setDarkMode] = useState<boolean>(false);
 
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -47,7 +48,28 @@ function App() {
       year: 'numeric' 
     };
     setCurrentDate(now.toLocaleDateString('en-US', options));
+    
+    // Check if user has a theme preference stored
+    const savedTheme = localStorage.getItem('deliveryAppTheme');
+    if (savedTheme === 'dark') {
+      setDarkMode(true);
+    }
   }, []);
+  
+  // Apply dark mode when it changes
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    
+    // Save theme preference
+    localStorage.setItem('deliveryAppTheme', darkMode ? 'dark' : 'light');
+    
+    // Update map theme if map exists
+    updateMapTheme();
+  }, [darkMode]);
 
   // Initialize geolocation tracking
   useEffect(() => {
@@ -70,6 +92,120 @@ function App() {
     );
   }, []);
 
+  // Map styles for light and dark mode
+  const lightMapStyle = [
+    {
+      featureType: "water",
+      elementType: "geometry",
+      stylers: [{ color: "#e9e9e9" }, { lightness: 17 }]
+    },
+    {
+      featureType: "landscape",
+      elementType: "geometry",
+      stylers: [{ color: "#f5f5f5" }, { lightness: 20 }]
+    },
+    {
+      featureType: "road.highway",
+      elementType: "geometry.fill",
+      stylers: [{ color: "#ffffff" }, { lightness: 17 }]
+    },
+    {
+      featureType: "road.highway",
+      elementType: "geometry.stroke",
+      stylers: [{ color: "#ffffff" }, { lightness: 29 }, { weight: 0.2 }]
+    }
+  ];
+  
+  const darkMapStyle = [
+    { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+    { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+    { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+    {
+      featureType: "administrative.locality",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#d59563" }],
+    },
+    {
+      featureType: "poi",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#d59563" }],
+    },
+    {
+      featureType: "poi.park",
+      elementType: "geometry",
+      stylers: [{ color: "#263c3f" }],
+    },
+    {
+      featureType: "poi.park",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#6b9a76" }],
+    },
+    {
+      featureType: "road",
+      elementType: "geometry",
+      stylers: [{ color: "#38414e" }],
+    },
+    {
+      featureType: "road",
+      elementType: "geometry.stroke",
+      stylers: [{ color: "#212a37" }],
+    },
+    {
+      featureType: "road",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#9ca5b3" }],
+    },
+    {
+      featureType: "road.highway",
+      elementType: "geometry",
+      stylers: [{ color: "#746855" }],
+    },
+    {
+      featureType: "road.highway",
+      elementType: "geometry.stroke",
+      stylers: [{ color: "#1f2835" }],
+    },
+    {
+      featureType: "road.highway",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#f3d19c" }],
+    },
+    {
+      featureType: "transit",
+      elementType: "geometry",
+      stylers: [{ color: "#2f3948" }],
+    },
+    {
+      featureType: "transit.station",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#d59563" }],
+    },
+    {
+      featureType: "water",
+      elementType: "geometry",
+      stylers: [{ color: "#17263c" }],
+    },
+    {
+      featureType: "water",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#515c6d" }],
+    },
+    {
+      featureType: "water",
+      elementType: "labels.text.stroke",
+      stylers: [{ color: "#17263c" }],
+    },
+  ];
+
+  // Update map theme when dark mode changes
+  const updateMapTheme = () => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setOptions({
+        styles: darkMode ? darkMapStyle : lightMapStyle
+      });
+    }
+  };
+
   // Initialize map
   useEffect(() => {
     if (mapRef.current && !mapInstanceRef.current) {
@@ -85,28 +221,7 @@ function App() {
         const map = new google.maps.Map(mapRef.current, {
           center: currentLocation || { lat: 49.2827, lng: -123.1207 }, // Default to Vancouver
           zoom: 12,
-          styles: [
-            {
-              featureType: "water",
-              elementType: "geometry",
-              stylers: [{ color: "#e9e9e9" }, { lightness: 17 }]
-            },
-            {
-              featureType: "landscape",
-              elementType: "geometry",
-              stylers: [{ color: "#f5f5f5" }, { lightness: 20 }]
-            },
-            {
-              featureType: "road.highway",
-              elementType: "geometry.fill",
-              stylers: [{ color: "#ffffff" }, { lightness: 17 }]
-            },
-            {
-              featureType: "road.highway",
-              elementType: "geometry.stroke",
-              stylers: [{ color: "#ffffff" }, { lightness: 29 }, { weight: 0.2 }]
-            }
-          ],
+          styles: darkMode ? darkMapStyle : lightMapStyle,
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false
@@ -141,7 +256,7 @@ function App() {
         }
       });
     }
-  }, [currentLocation]);
+  }, [currentLocation, darkMode]);
 
   // Update map marker when current location changes
   useEffect(() => {
@@ -427,8 +542,12 @@ function App() {
     setTimeout(() => calculateRoute(), 100);
   };
 
+  const toggleDarkMode = () => {
+    setDarkMode(prev => !prev);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'} flex flex-col`}>
       {/* Map View (Always Visible) */}
       <div className="relative">
         <div
@@ -440,16 +559,16 @@ function App() {
         <div className="absolute top-2 right-2 flex gap-2">
           <button 
             onClick={calculateRoute}
-            className="bg-white p-2 rounded-full shadow-md"
+            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} p-2 rounded-full shadow-md`}
             aria-label="Recenter map"
           >
-            <Navigation size={20} className="text-gray-700" />
+            <Navigation size={20} className={darkMode ? 'text-gray-300' : 'text-gray-700'} />
           </button>
         </div>
         
         {/* Route Summary (Shows on top of the map when available) */}
         {routeSummary && (
-          <div className="absolute bottom-3 left-4 right-4 bg-white/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-md">
+          <div className={`absolute bottom-3 left-4 right-4 ${darkMode ? 'bg-gray-800/80' : 'bg-white/80'} backdrop-blur-sm py-2 px-4 rounded-lg shadow-md`}>
             <div className="flex items-center gap-2">
               <div className="h-6 w-6 rounded-full bg-yellow-500 flex items-center justify-center">
                 <span className="text-xs text-white font-bold">✓</span>
@@ -464,7 +583,7 @@ function App() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 bg-white rounded-t-3xl -mt-4 z-10 p-4">
+      <div className={`flex-1 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-t-3xl -mt-4 z-10 p-4`}>
         {isLoading ? (
           <div className="h-full flex items-center justify-center">
             <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-500 border-t-transparent"></div>
@@ -476,7 +595,7 @@ function App() {
               <div>
                 <h2 className="text-2xl font-bold">{currentDate}</h2>
                 {stops.length > 0 && (
-                  <p className="text-gray-600">
+                  <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {stops.length} Stops • 0 Parcels • {routeSummary?.totalKm || '--'} km • {routeSummary?.totalTime || '--'}
                   </p>
                 )}
@@ -494,13 +613,13 @@ function App() {
             </div>
             
             {locationError && (
-              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-sm">
+              <div className={`mb-4 p-3 ${darkMode ? 'bg-yellow-900/30 border-yellow-800 text-yellow-200' : 'bg-yellow-50 border-yellow-200 text-yellow-800'} rounded-lg text-sm border`}>
                 <p>
                   <span className="font-medium">Location not available:</span> {locationError}
                 </p>
                 <input
                   type="text"
-                  className="mt-2 p-2 w-full rounded border border-gray-300"
+                  className={`mt-2 p-2 w-full rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   value={manualOrigin}
                   onChange={e => setManualOrigin(e.target.value)}
                   placeholder="Enter start address manually"
@@ -510,12 +629,12 @@ function App() {
             
             {/* Starting Location */}
             {currentLocation && !stops.length && (
-              <div className="flex items-center gap-3 mb-4 p-3 border-b">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100">
-                  <MapIcon size={16} className="text-gray-600" />
+              <div className={`flex items-center gap-3 mb-4 p-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`flex items-center justify-center h-8 w-8 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                  <MapIcon size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
                 </div>
                 <div>
-                  <p className="text-gray-600">Your location</p>
+                  <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Your location</p>
                   <p className="font-medium">Current GPS location</p>
                 </div>
               </div>
@@ -527,13 +646,13 @@ function App() {
                 {/* Starting Point */}
                 <div className="flex items-start gap-3 mb-2">
                   <div className="flex flex-col items-center">
-                    <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 border-2 border-blue-500 text-blue-500">
-                      <MapIcon size={16} />
+                    <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-500'} border-2 text-blue-500`}>
+                      <MapIcon size={16} className={darkMode ? 'text-blue-400' : 'text-blue-500'} />
                     </div>
-                    <div className="w-0.5 h-8 bg-blue-200 my-1"></div>
+                    <div className={`w-0.5 h-8 ${darkMode ? 'bg-blue-700' : 'bg-blue-200'} my-1`}></div>
                   </div>
                   <div className="flex-1 pt-1">
-                    <p className="text-gray-500 text-sm">your trip starts here</p>
+                    <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>your trip starts here</p>
                   </div>
                 </div>
                 
@@ -543,15 +662,27 @@ function App() {
                   .map((stop, index, array) => (
                     <div key={stop.id} className="flex items-start gap-3 mb-2">
                       <div className="flex flex-col items-center">
-                        <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${stop.completed ? 'bg-gray-100 text-gray-400' : 'bg-blue-500 text-white'} font-bold`}>
+                        <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
+                          stop.completed 
+                            ? (darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-400') 
+                            : (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white')
+                        } font-bold`}>
                           {stop.order}
                         </div>
-                        {index < array.length - 1 && <div className={`w-0.5 h-16 ${stop.completed ? 'bg-gray-200' : 'bg-blue-200'} my-1`}></div>}
+                        {index < array.length - 1 && <div className={`w-0.5 h-16 ${
+                          stop.completed 
+                            ? (darkMode ? 'bg-gray-700' : 'bg-gray-200') 
+                            : (darkMode ? 'bg-blue-700' : 'bg-blue-200')
+                        } my-1`}></div>}
                       </div>
                       <div className={`flex-1 pb-6 ${stop.completed ? 'opacity-60' : ''}`}>
                         <div className="flex justify-between items-start">
-                          <p className={`font-medium text-lg ${stop.completed ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                            {stop.address} <span className="text-gray-500">({stop.delivery_number})</span>
+                          <p className={`font-medium text-lg ${
+                            stop.completed 
+                              ? 'line-through ' + (darkMode ? 'text-gray-500' : 'text-gray-500')
+                              : darkMode ? 'text-gray-200' : 'text-gray-800'
+                          }`}>
+                            {stop.address} <span className={darkMode ? 'text-gray-500' : 'text-gray-500'}>({stop.delivery_number})</span>
                           </p>
                           <div className="flex items-center">
                             <button
@@ -559,7 +690,7 @@ function App() {
                               className={`p-2 rounded-full ${
                                 stop.completed
                                   ? 'text-green-500'
-                                  : 'text-gray-400'
+                                  : darkMode ? 'text-gray-400' : 'text-gray-400'
                               }`}
                             >
                               <CheckCircle2 size={20} />
@@ -572,7 +703,7 @@ function App() {
                             </button>
                           </div>
                         </div>
-                        <div className="flex gap-2 mt-1 text-sm text-gray-500">
+                        <div className={`flex gap-2 mt-1 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           <span>{(index + 1) * 2} km</span>
                           <span>•</span>
                           <span>{(index + 1) * 7}min</span>
@@ -590,14 +721,14 @@ function App() {
                     className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center justify-center gap-2"
                   >
                     <Navigation size={16} />
-                    <span>Navigate</span>
+                    <span>Open in Google Maps</span>
                   </button>
                   
                   {/* Reset Button */}
                   {stops.some(stop => stop.completed) && (
                     <button
                       onClick={resetStops}
-                      className="text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                      className={`${darkMode ? 'text-blue-400' : 'text-blue-500'} hover:${darkMode ? 'text-blue-300' : 'text-blue-600'} flex items-center gap-1`}
                     >
                       <RotateCcw size={18} />
                       <span>Reset All Stops</span>
@@ -611,25 +742,18 @@ function App() {
       </div>
 
       {/* Bottom Navigation Bar */}
-      <div className="bg-white border-t flex justify-around py-2">
+      <div className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border-t flex justify-around py-2`}>
+        {/* Dark Mode Toggle (replacing History) */}
         <button
-          onClick={() => setActiveTab('history')}
-          className={`flex flex-col items-center px-4 py-2 ${activeTab === 'history' ? 'text-blue-500' : 'text-gray-500'}`}
+          onClick={toggleDarkMode}
+          className={`flex flex-col items-center px-4 py-2 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}
         >
-          <Clock size={20} />
-          <span className="text-xs mt-1">History</span>
-        </button>
-        
-        <button
-          onClick={() => setActiveTab('support')}
-          className={`flex flex-col items-center px-4 py-2 ${activeTab === 'support' ? 'text-blue-500' : 'text-gray-500'}`}
-        >
-          <LifeBuoy size={20} />
-          <span className="text-xs mt-1">Support</span>
+          {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+          <span className="text-xs mt-1">{darkMode ? 'Light' : 'Dark'}</span>
         </button>
         
         {/* Image Capture Button */}
-        <label className="flex flex-col items-center px-4 py-2 bg-blue-50 text-blue-500 rounded-lg mx-1">
+        <label className="flex flex-col items-center px-4 py-2 text-gray-500">
           <Camera size={24} />
           <span className="text-xs mt-1">Take Photo</span>
           <input
@@ -654,7 +778,10 @@ function App() {
         
         <button
           onClick={() => setActiveTab('profile')}
-          className={`flex flex-col items-center px-4 py-2 ${activeTab === 'profile' ? 'text-blue-500' : 'text-gray-500'}`}
+          className={`flex flex-col items-center px-4 py-2 ${
+            activeTab === 'profile' ? (darkMode ? 'text-blue-300' : 'text-blue-500') : (darkMode ? 'text-gray-400' : 'text-gray-500')
+          }`}
+          aria-label="Profile"
         >
           <User size={20} />
           <span className="text-xs mt-1">Profile</span>
