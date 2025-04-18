@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, FileText, Map as MapIcon, Navigation, CheckCircle2, Trash2, RotateCcw, User, Clock, LifeBuoy } from 'lucide-react';
+import { Camera, FileText, Map as MapIcon, Navigation, CheckCircle2, Trash2, RotateCcw, User, Clock, LifeBuoy, Sliders } from 'lucide-react';
 import { Loader } from '@googlemaps/js-api-loader';
 import heic2any from "heic2any";
 
@@ -472,12 +472,24 @@ function App() {
         ) : (
           <div>
             {/* Route Date & Summary */}
-            <div className="mb-4">
-              <h2 className="text-2xl font-bold">{currentDate}</h2>
-              {stops.length > 0 && (
-                <p className="text-gray-600">
-                  {stops.length} Stops • 0 Parcels • {routeSummary?.totalKm || '--'} km • {routeSummary?.totalTime || '--'}
-                </p>
+            <div className="mb-4 flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl font-bold">{currentDate}</h2>
+                {stops.length > 0 && (
+                  <p className="text-gray-600">
+                    {stops.length} Stops • 0 Parcels • {routeSummary?.totalKm || '--'} km • {routeSummary?.totalTime || '--'}
+                  </p>
+                )}
+              </div>
+              {/* Adding Optimize Route button here */}
+              {stops.length > 1 && (
+                <button 
+                  onClick={calculateRoute}
+                  className="bg-blue-500 text-white py-2 px-4 rounded-lg flex items-center gap-2 text-sm"
+                >
+                  <Sliders size={16} />
+                  <span>Optimize Route</span>
+                </button>
               )}
             </div>
             
@@ -565,46 +577,33 @@ function App() {
                           <span>•</span>
                           <span>{(index + 1) * 7}min</span>
                         </div>
-                        
-                        {/* Navigation Button */}
-                        {index === 0 && !stop.completed && (
-                          <div className="flex gap-2 mt-2">
-                            <button
-                              onClick={openInGoogleMaps}
-                              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center justify-center gap-2"
-                            >
-                              <Navigation size={16} />
-                              <span>Navigate</span>
-                            </button>
-                            <button
-                              onClick={() => toggleStopCompletion(stop.id)}
-                              className="flex-1 bg-green-100 text-green-700 border border-green-200 py-2 px-4 rounded flex items-center justify-center gap-2"
-                            >
-                              <CheckCircle2 size={16} />
-                              <span>Success</span>
-                            </button>
-                            <button className="w-10 h-10 bg-red-50 text-red-500 border border-red-100 rounded flex items-center justify-center">
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   ))
                 }
                 
-                {/* Reset Button */}
-                {stops.some(stop => stop.completed) && (
-                  <div className="mt-4 text-center">
+                {/* Action Buttons */}
+                <div className="mt-4 flex justify-between">
+                  {/* Added the Navigate button here at bottom level instead */}
+                  <button
+                    onClick={openInGoogleMaps}
+                    className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center justify-center gap-2"
+                  >
+                    <Navigation size={16} />
+                    <span>Navigate</span>
+                  </button>
+                  
+                  {/* Reset Button */}
+                  {stops.some(stop => stop.completed) && (
                     <button
                       onClick={resetStops}
-                      className="text-blue-500 hover:text-blue-600 flex items-center gap-1 mx-auto"
+                      className="text-blue-500 hover:text-blue-600 flex items-center gap-1"
                     >
                       <RotateCcw size={18} />
                       <span>Reset All Stops</span>
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
           </div>
