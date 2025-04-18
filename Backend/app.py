@@ -57,13 +57,18 @@ async def ocr_extract(request: OCRRequest):
     data_url = request.image
     try:
         header, encoded = data_url.split(",", 1)
+        print("Splitting image")
         image_data = io.BytesIO(base64.b64decode(encoded))
+        print("Decoding image")
         image = Image.open(image_data)
+        print("Opening image")
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid image data: {str(e)}")
 
     # OCR
     text = pytesseract.image_to_string(image, lang='eng+nor')
+    print("image to text")
+
 
     # Split into blocks
     raw_blocks = re.split(r"\n\s*\n", text)
