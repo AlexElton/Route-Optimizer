@@ -30,7 +30,7 @@ app = FastAPI()
 # Enable CORS for local React dev (ports 3000 & 5174)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://route-optimizer-two.vercel.app", "http://localhost:3000"],  # Frontend URL
+    allow_origins=["https://route-optimizer-two.vercel.app", "http://localhost:3000", "http://localhost:5174"],  # Frontend URL
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],  # Allow preflight OPTIONS request
     allow_headers=["*"],  
