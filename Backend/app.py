@@ -56,6 +56,8 @@ async def ocr_extract(request: OCRRequest):
     # Extract base64 payload
     data_url = request.image
     try:
+        if "," not in data_url:
+            raise HTTPException(status_code=400, detail="Image data is not a valid data URL")
         header, encoded = data_url.split(",", 1)
         print("Splitting image")
         image_data = io.BytesIO(base64.b64decode(encoded))
