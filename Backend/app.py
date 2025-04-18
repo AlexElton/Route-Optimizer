@@ -27,12 +27,12 @@ if not GOOGLE_API_KEY:
 
 # Initialize FastAPI app
 app = FastAPI()
+
 # Enable CORS for local React dev (ports 3000 & 5174)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Or specify your frontend's domain, e.g., ["http://localhost:3000"]
     allow_credentials=True,
-    allow_methods=["*"],
     allow_headers=["*"],
 )
 
