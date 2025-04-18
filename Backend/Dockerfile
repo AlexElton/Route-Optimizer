@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 8080
 
 # Command to run the FastAPI server
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+CMD ["fastapi", "run", "app.py", "--port", "8080"]
