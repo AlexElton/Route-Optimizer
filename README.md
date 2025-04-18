@@ -105,15 +105,18 @@ The FastAPI backend provides an endpoint to handle the upload of multiple image 
 2. **Run the Frontend**:
     - Start the React development server by running:
     ```bash
-    npm start
+    npm run dev
     ```
 
-    This will start the frontend on `http://localhost:3000`.
+    This will start the frontend on `http://localhost:5174`.
 
 3. **Upload Images**:
-    - Open the frontend in your browser (`http://localhost:3000`).
+    - Open the frontend in your browser (`http://localhost:5174`).
     - Select multiple image files to upload.
     - The backend will process each image, and the extracted text will be displayed on the frontend.
 
-## Project Structure
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 
