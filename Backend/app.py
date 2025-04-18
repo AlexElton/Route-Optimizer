@@ -32,8 +32,6 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Or specify your frontend's domain, e.g., ["http://localhost:3000"]
-    allow_credentials=True,
-    allow_headers=["*"],
 )
 
 # Regex to detect and parse lines like "59 RANHEIMSVEIEN 211"
