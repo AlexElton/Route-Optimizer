@@ -31,7 +31,10 @@ app = FastAPI()
 # Enable CORS for local React dev (ports 3000 & 5174)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Or specify your frontend's domain, e.g., ["http://localhost:3000"]
+      allow_origins=["https://route-optimizer-two.vercel.app", "http://localhost:3000"],  # Frontend URL
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],  # Allow preflight OPTIONS request
+    allow_headers=["*"],  
 )
 
 # Regex to detect and parse lines like "59 RANHEIMSVEIEN 211"
@@ -47,6 +50,10 @@ class DeliveryStop(BaseModel):
 
 class OCRResponse(BaseModel):
     stops: list[DeliveryStop]
+    
+@app.options("/ocr")
+async def options_ocr():
+    return {} 
 
 @app.post("/ocr", response_model=OCRResponse)
 async def ocr_extract(request: OCRRequest):
