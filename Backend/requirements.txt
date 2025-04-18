@@ -2,6 +2,8 @@
 # ----------------
 fastapi==0.100.0
 uvicorn[standard]==0.23.2
+fastapi[standard]>=0.113.0,<0.114.0
+pydantic>=2.7.0,<3.0.0
 python-dotenv==1.0.0
 pytesseract==0.3.10
 Pillow==10.4.0
