@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Send, FileText, Map as MapIcon, Navigation, CheckCircle2, Trash2, RotateCcw } from 'lucide-react';
 import { Loader } from '@googlemaps/js-api-loader';
+import heic2any from "heic2any";
 
 interface DeliveryStop {
   id: string;
@@ -111,15 +112,43 @@ function App() {
   }, [ocrResult]);
   
 
-  const handleImageCapture = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+  
+    try {
+      let previewDataUrl: string;
+  
+      if (file.type === "image/heic" || file.name.endsWith(".heic")) {
+        // Convert HEIC to PNG
+        const convertedBlob = await heic2any({
+          blob: file,
+          toType: "image/png",
+          quality: 0.9,
+        }) as Blob;
+  
+        previewDataUrl = await blobToDataURL(convertedBlob);
+      } else {
+        // Standard images
+        previewDataUrl = await blobToDataURL(file);
+      }
+  
+      setImagePreview(previewDataUrl);
+    } catch (err) {
+      console.error("Failed to process image:", err);
+      alert("Could not process the selected image. Please try a different file.");
+    }
+  };
+  
+  const blobToDataURL = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        resolve(reader.result as string);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   };
 
   const handleSubmit = async () => {
