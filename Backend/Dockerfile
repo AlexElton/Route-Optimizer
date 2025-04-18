@@ -1,21 +1,15 @@
-# Use an official Python runtime as a parent image
+#Create docker to run backend
 FROM python:3.9
-
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /app
-
 # Copy the requirements file into the container
 COPY requirements.txt .
-
 # Install the dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-
 # Copy the rest of the application code into the container
 COPY . .
-
 # Expose the port the app runs on
 EXPOSE 8080
+# Set environment variables
 
-# Command to run the FastAPI server
-
-CMD ["fastapi", "run", "app.py", "--port", "8080"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
