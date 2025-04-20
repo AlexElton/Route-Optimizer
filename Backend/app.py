@@ -1,109 +1,107 @@
-# Project Structure
-# -----------------
-# .
-# ├── app.py
-# ├── requirements.txt
-# └── .env
-
-# app.py
-# ----------------
+import os
+import base64
+import re
+import requests
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from PIL import Image
-import pytesseract
-import io
-import re
-import os
-import base64
-from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
+
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
-    raise RuntimeError("Please set the GOOGLE_API_KEY environment variable in .env file.")
+    raise RuntimeError("GOOGLE_API_KEY not set in .env")
 
-# Initialize FastAPI app
+VISION_URL = f"https://vision.googleapis.com/v1/images:annotate?key={GOOGLE_API_KEY}"
+
 app = FastAPI()
 
-# Enable CORS for local React dev (ports 3000 & 5174)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://route-optimizer-two.vercel.app", "http://localhost:3000", "http://localhost:5174"],  # Frontend URL
+    allow_origins=["https://route-optimizer-two.vercel.app", "http://localhost:3000", "http://localhost:5173"],  # Frontend URL
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],  # Allow preflight OPTIONS request
     allow_headers=["*"],  
 )
 
-# Regex to detect and parse lines like "59 RANHEIMSVEIEN 211"
-ADDRESS_LINE_REGEX = re.compile(r"^(?P<number>\d{1,3})\s+(?P<address>[\w\.\-ÆØÅæøå\s\d]+)$")
+class ImagePayload(BaseModel):
+    image: str  # base64 image data URL
 
-# Pydantic models for request/response
-class OCRRequest(BaseModel):
-    image: str  # base64 data URL
-
-class DeliveryStop(BaseModel):
-    delivery_number: int
-    address: str
-
-class OCRResponse(BaseModel):
-    stops: list[DeliveryStop]
-    
-
-@app.post("/ocr", response_model=OCRResponse)
-async def ocr_extract(request: OCRRequest):
-    # Extract base64 payload
-    data_url = request.image
+@app.post("/ocr")
+async def ocr_image(payload: ImagePayload):
     try:
-        if "," not in data_url:
-            raise HTTPException(status_code=400, detail="Image data is not a valid data URL")
-        header, encoded = data_url.split(",", 1)
-        print("Splitting image")
-        image_data = io.BytesIO(base64.b64decode(encoded))
-        print("Decoding image")
-        image_data = io.BytesIO(base64.b64decode(encoded))
-        image = Image.open(image_data).convert("RGB")
-        print("Opening image")
+        base64_data = payload.image.split(",")[1] if "," in payload.image else payload.image
+
+        request_body = {
+            "requests": [{
+                "image": {
+                    "content": base64_data
+                },
+                "features": [{
+                    "type": "TEXT_DETECTION"
+                }]
+            }]
+        }
+
+        response = requests.post(VISION_URL, json=request_body)
+        response.raise_for_status()
+
+        annotations = response.json()["responses"][0].get("textAnnotations")
+        if not annotations:
+            raise HTTPException(status_code=400, detail="No text detected")
+
+        full_text = annotations[0]["description"]
+        print("Full OCR text:", full_text)
+
+        stops = extract_stops(full_text)
+        return {"stops": stops}
+
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid image data: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # OCR
-    text = pytesseract.image_to_string(image, lang='eng+nor')
-    print("image to text")
-
-
-    # Split into blocks
-    raw_blocks = re.split(r"\n\s*\n", text)
-    blocks = [block.splitlines() for block in raw_blocks if block.strip()]
-
-    # Extract stops
+def extract_stops(text: str):
+    lines = text.splitlines()
     stops = []
-    for block in blocks:
-        for line in block:
-            line_clean = line.strip().replace('“', '').replace('”', '')
-            m = ADDRESS_LINE_REGEX.match(line_clean)
-            if m:
-                stops.append({
-                    "delivery_number": int(m.group('number')),
-                    "address": m.group('address').strip()
-                })
-    if not stops:
-        raise HTTPException(status_code=404, detail="No delivery stops found in image.")
-    # Sort by delivery_number
-    stops.sort(key=lambda s: s['delivery_number'])
-
-    return {"stops": stops}
-
-# Setup & Run Instructions
-# ------------------------
-# 1. Create a virtual environment:
-#      python3 -m venv venv
-#      source venv/bin/activate
-# 2. Ensure you have `requirements.txt` & `.env` in the project root.
-# 3. Install dependencies:
-#      pip install -r requirements.txt
-# 4. Start the server:
-#      python -m uvicorn app:app --reload --port 5001
-
-# After that, point your frontend at http://localhost:5001/ocr
+    
+    for i in range(len(lines)):
+        line = lines[i].strip()
+        
+        # Match delivery numbers (like 57, 58, 59, 60)
+        delivery_match = re.match(r'^\s*(\d{1,3})\s*$', line)
+        
+        if delivery_match:
+            delivery_number = int(delivery_match.group(1))
+            address = None
+            postal_city = None
+            name = None
+            
+            # Get the next lines if available
+            if i + 1 < len(lines):
+                address = lines[i + 1].strip()
+            
+            if i + 2 < len(lines):
+                potential_name = lines[i + 2].strip()
+                if not re.search(r'\d{4}', potential_name):  # If no postal code, it's likely a name
+                    name = potential_name
+                    if i + 3 < len(lines):
+                        potential_postal = lines[i + 3].strip()
+                        if re.search(r'\d{4}\s+\w+', potential_postal):
+                            postal_city = potential_postal
+                else:
+                    postal_city = potential_name
+            
+            if address and postal_city:
+                full_address = f"{address}, {postal_city}"
+                
+                stop_info = {
+                    "delivery_number": delivery_number,
+                    "address": full_address
+                }
+                
+                if name:
+                    stop_info["name"] = name
+                    
+                stops.append(stop_info)
+    
+    return stops
