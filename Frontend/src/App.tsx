@@ -312,16 +312,33 @@ function App() {
   
     try {
       let previewDataUrl: string;
-  
-      if (file.type === "image/heic" || file.name.endsWith(".heic")) {
-        // Convert HEIC to PNG
-        const convertedBlob = await heic2any({
-          blob: file,
-          toType: "image/png",
-          quality: 0.9,
-        }) as Blob;
-  
-        previewDataUrl = await blobToDataURL(convertedBlob);
+      
+      // More robust HEIC detection
+      const isHeic = file.type === "image/heic" || 
+                    file.type === "image/heif" || 
+                    file.name.toLowerCase().endsWith(".heic") || 
+                    file.name.toLowerCase().endsWith(".heif");
+      
+      if (isHeic) {
+        console.log("Converting HEIC image...");
+        
+        // Add error handling for the conversion
+        try {
+          const convertedBlob = await heic2any({
+            blob: file,
+            toType: "image/jpeg", // JPEG often works better than PNG for conversion
+            quality: 0.8,
+          });
+          
+          // Handle both array and single blob responses
+          const resultBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+          previewDataUrl = await blobToDataURL(resultBlob);
+          console.log("HEIC conversion successful");
+        } catch (convErr) {
+          console.error("HEIC conversion failed:", convErr);
+          // Fall back to direct processing if conversion fails
+          previewDataUrl = await blobToDataURL(file);
+        }
       } else {
         // Standard images
         previewDataUrl = await blobToDataURL(file);

@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.9-slim
 
 # Set the working directory
 WORKDIR /app
@@ -21,8 +21,8 @@ RUN apt-get update && \
 # Copy application code
 COPY . .
 
-# Expose port
-EXPOSE 8080
+# Make sure we listen on the correct port
+ENV PORT=8080
 
-# Modify the application startup to handle missing env vars gracefully
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+# Use the PORT environment variable in the CMD
+CMD exec uvicorn app:app --host 0.0.0.0 --port ${PORT}

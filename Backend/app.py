@@ -7,11 +7,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-load_dotenv()
+load_dotenv(verbose=False)
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+# Get port from environment variable with fallback
+PORT = int(os.getenv("PORT", "8080"))
+# Get API key with empty string fallback instead of raising error
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 if not GOOGLE_API_KEY:
-    raise RuntimeError("GOOGLE_API_KEY not set in .env")
+    print("WARNING: GOOGLE_API_KEY not set. API calls will fail but server will start.")
 
 VISION_URL = f"https://vision.googleapis.com/v1/images:annotate?key={GOOGLE_API_KEY}"
 
@@ -24,6 +27,10 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],  # Allow preflight OPTIONS request
     allow_headers=["*"],  
 )
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
 class ImagePayload(BaseModel):
     image: str  # base64 image data URL
@@ -105,3 +112,10 @@ def extract_stops(text: str):
                 stops.append(stop_info)
     
     return stops
+
+
+# If this file is executed directly, run the app
+if __name__ == "__main__":
+    import uvicorn
+    print(f"Starting server on port {PORT}")
+    uvicorn.run("app:app", host="0.0.0.0", port=PORT)
